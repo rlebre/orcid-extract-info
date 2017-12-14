@@ -1,0 +1,15 @@
+certifi==2017.11.5
+chardet==3.0.4
+click==6.7
+decorator==4.1.2
+Flask==0.12.2
+idna==2.6
+itsdangerous==0.24
+Jinja2==2.10
+jsonpath-ng==1.4.3
+MarkupSafe==1.0
+ply==3.10
+requests==2.18.4
+six==1.11.0
+urllib3==1.22
+Werkzeug==0.13
