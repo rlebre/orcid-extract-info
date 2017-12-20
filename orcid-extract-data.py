@@ -9,6 +9,11 @@ import argparse
 import json
 import orcid_parser
 import os
+import logging
+
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
 
 CLIENT_ID = 'APP-OOJAC0Y3XDYQQO9S'#None # Fill this in with your client ID
 CLIENT_SECRET = '01ee56d6-89fb-4e94-9bf5-377aa52e9875'#None # Fill this in with your client secret
@@ -18,19 +23,6 @@ API_URL = "https://pub.orcid.org/v2.0"
 
 TOKEN = ""
 args = {}
-
-def user_agent():
-    '''reddit API clients should each have their own, unique user-agent
-    Ideally, with contact info included.
-    
-    e.g.,
-    return "oauth2-sample-app by /u/%s" % your_reddit_username
-
-    '''
-    raise NotImplementedError()
-
-def base_headers():
-    return {"User-Agent": user_agent()}
 
 
 app = Flask(__name__)
@@ -65,7 +57,16 @@ def is_valid_state(state):
 @app.route('/auth_callback')
 def auth_callback():
     code = request.args.get('code')
+
+    print("Starting...")
+    print("Getting access token")
     access_token = get_token(code)
+
+    shutdown_server()
+
+    print("\nDONE!")
+    print("Exported JSON: ", args.output)
+    print("Exported CSV:  ", args.output_csv)
 
     return '<script>self.close();</script>'
 
@@ -81,7 +82,8 @@ def get_token(code):
                              data=post_data)
 
     token_json = response.json()
-    #print("OAUTH-TOKEN: ", token_json)
+    
+    print("Getting data")
 
     if args.inputfile:
         entries = []
@@ -91,17 +93,58 @@ def get_token(code):
                 print("getting: ", line.rstrip('\n'))
                 entries.append(get_personal_details(line.rstrip('\n'), token_json))
         
-        if args.output:
-            with open(args.output, "w") as f:
-                print(json.dumps(entries, sort_keys=True, indent=3))
-                f.write(json.dumps(entries, sort_keys=True, indent=3))
+        write_json(entries)
+        write_csv(entries)
     elif args.id:
         info = get_personal_details(args.id, token_json)
-        if args.output:
-            with open(args.output, "w") as f:
-                f.write(json.dumps(info, sort_keys=True, indent=3))
+        write_json(info)
+        write_csv([info])
 
     return token_json["access_token"]
+
+def write_json(formatted_json):
+     if args.output:
+        with open(args.output, "w") as f:
+            f.write(json.dumps(formatted_json, sort_keys=True, indent=3))
+
+def write_csv(formatted_json):
+    #persons = json.loads(formatted_json)
+    formatted_csv_strings = []
+    csv_delimitter = '\t'
+    for person_entry in formatted_json:
+        person_details = ""
+        person_details += person_entry['profile']['name'] + csv_delimitter
+        person_details += person_entry['profile']['orcid'] + csv_delimitter
+        person_details += person_entry['profile']['scopus'] + csv_delimitter
+
+
+        formatted_string = ""
+
+        for contribution in person_entry['publications']:
+            formatted_string += person_details
+            formatted_string += contribution['title'] + csv_delimitter
+            formatted_string += contribution['journal'] + csv_delimitter
+            formatted_string += contribution['year'] + csv_delimitter
+            formatted_string += contribution['type'] + csv_delimitter
+            formatted_string += contribution['url'] + csv_delimitter
+            if contribution['doi'] != []:
+                formatted_string += contribution['doi'][0] + csv_delimitter
+            else:
+                formatted_string += " " + csv_delimitter
+            formatted_string += str(contribution['created']) + csv_delimitter
+            
+            for contributor in contribution['contributions']:
+                formatted_string += contributor + ", "
+            
+            formatted_string += '\n'
+            
+        formatted_csv_strings.append(formatted_string)
+
+    if args.output_csv:
+        with open(args.output_csv, "w") as f:
+            for string in formatted_csv_strings:
+                f.write(string)
+
 
 def get_personal_details(orcid, token_json):
     #print("WEIRD TOKEN: ", TOKEN)
@@ -137,7 +180,7 @@ def get_personal_details(orcid, token_json):
             with open(os.path.join(args.save_requests,"{}-pubs-{}.json".format(orcid, i)), 'w') as outfile:
                 json.dump(tmp_pub_list, outfile)
 
-        ret["publications"].append(orcid_parser.parse_works_bulkdata(tmp_pub_list))
+        ret["publications"] += orcid_parser.parse_works_bulkdata(tmp_pub_list)
 
 
     return ret
@@ -145,6 +188,7 @@ def get_personal_details(orcid, token_json):
     #     with open(args.output, "w") as f:
     #         f.write(json.dumps(ret, sort_keys=True, indent=3))
 
+    # print(len(ret['publications']))
     # print("DONE", orcid)
     # print("Ctrl + C to terminate")
 
@@ -153,7 +197,7 @@ def get_publication_details(work_codes, orcid):
     headers = {"Accept":"application/json", "Authorization" : TOKEN}
     url = "{}/{}/works/{}".format(API_URL, orcid, ",".join( str(code) for code in work_codes ))
     response = requests.get(url,headers=headers).json()
-    #print("Fetching: ",url)
+    #print("Fetching: ",len(url.split(',')))
 
     return response
 
@@ -165,10 +209,18 @@ def parse_args():
     group.add_argument('-i', '--inputfile', help='Provide a file containing a list of the OrcIDs desired (one per line)', type=str)
 
     parser.add_argument("-s", '--save_requests', help='Folder where to save the intermidiate request files', type=str, required=False)
-    parser.add_argument("-o", '--output', help='JSON File where to save the simplified model', type=str, required=False)
+    parser.add_argument("-o", '--output', help='JSON File where to save the simplified model', type=str, required=False, default="export.json")
+    parser.add_argument("-csv", '--output_csv', help='JSON File where to save the simplified model', type=str, required=False, default="export.csv")
 
     args = parser.parse_args()
+    
     return args
+
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
 
 if __name__ == '__main__':
     args = parse_args()
@@ -177,8 +229,9 @@ if __name__ == '__main__':
         os.makedirs(args.save_requests, exist_ok=True)
 
     url = "http://localhost:65010"
-    webbrowser.open(make_authorization_url())
+    webbrowser.open_new_tab(make_authorization_url())
+    #webbrowser.open(make_authorization_url())
 
-    app.run(debug=True, port=65010)
+    app.run(debug=False, port=65010)
 
 
