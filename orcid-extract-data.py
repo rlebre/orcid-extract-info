@@ -111,6 +111,11 @@ def write_csv(formatted_json):
     #persons = json.loads(formatted_json)
     formatted_csv_strings = []
     csv_delimitter = '\t'
+    headers = ['name', 'orcid', 'scopus', 'title', 'journal', 'year', 'type', 'url', 'doi', 'created', 'contributor', '\n']
+    headers = csv_delimitter.join(headers)
+
+    formatted_csv_strings.append(headers)
+
     for person_entry in formatted_json:
         person_details = ""
         person_details += person_entry['profile']['name'] + csv_delimitter
