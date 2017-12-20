@@ -208,9 +208,9 @@ def parse_args():
     group.add_argument('-id', '--id', help='Provide the OrcID desired', type=str)
     group.add_argument('-i', '--inputfile', help='Provide a file containing a list of the OrcIDs desired (one per line)', type=str)
 
-    parser.add_argument("-s", '--save_requests', help='Folder where to save the intermidiate request files', type=str, required=False)
-    parser.add_argument("-o", '--output', help='JSON File where to save the simplified model', type=str, required=False, default="export.json")
-    parser.add_argument("-csv", '--output_csv', help='JSON File where to save the simplified model', type=str, required=False, default="export.csv")
+    parser.add_argument("-s", '--save_requests', help='Folder where to save the intermidiate request files', type=str, required=False, metavar="path/to/directory")
+    parser.add_argument("-o", '--output', help='JSON File where to save the simplified model. Default: (current path)/export.json', type=str, required=False, default="export.json", metavar="path/to/file.json")
+    parser.add_argument("-csv", '--output_csv', help='CSV File where to save the exported data. Default: (current path)/export.csv', type=str, required=False, default="export.csv", metavar="path/to/file.csv")
 
     args = parser.parse_args()
     
