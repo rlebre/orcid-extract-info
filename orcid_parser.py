@@ -43,16 +43,54 @@ def get_work_codes(personal_details):
     return put_codes
 
 def parse_work_entry(work_entry):
-    return {
-        'title': work_entry["title"]["title"]["value"],
-        'journal': work_entry["journal-title"]["value"],
-        'year': work_entry["publication-date"]["year"]["value"],
-        'type': work_entry["type"],
-        'doi': [ m.value for m in jsonpath_expr["doi"].find(work_entry)],
-        'url': find_first(jsonpath_expr["url"], work_entry),
-        'created': find_first(jsonpath_expr["created"], work_entry),
-        'contributions': [m.value for m in jsonpath_expr["contrib"].find(work_entry)]
-    }
+    return_dict = { }
+
+    try:
+        return_dict['title'] = work_entry["title"]["title"]["value"]
+    except:
+        return_dict['title'] = ""
+
+    try:
+        return_dict['journal'] = work_entry["journal-title"]["value"]
+    except: 
+        return_dict['journal'] = ""
+ 
+    try:
+        return_dict['year'] = work_entry["publication-date"]["year"]["value"]
+    except:
+        return_dict['year'] = ""
+
+    try:
+        return_dict['type'] = work_entry["type"]
+    except:
+        return_dict['type'] = ""
+
+    try:
+        return_dict['doi'] = [ m.value for m in jsonpath_expr["doi"].find(work_entry)]
+    except:
+        return_dict['doi'] = []
+   
+    try:
+        if find_first(jsonpath_expr["url"], work_entry) == []:
+            return_dict['url'] = ""
+        else:
+            return_dict['url'] = find_first(jsonpath_expr["url"], work_entry)
+            
+    except:
+        return_dict['url'] = ""
+
+    try:
+        return_dict['created'] = find_first(jsonpath_expr["created"], work_entry)
+    except:
+        return_dict['created'] = ""
+
+    try:
+        return_dict['contributions'] = [m.value for m in jsonpath_expr["contrib"].find(work_entry)]
+    except:
+        return_dict['contributions'] = []
+
+    return return_dict
+
 
 def parse_personal_details(datum):
     return {

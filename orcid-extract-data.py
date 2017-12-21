@@ -118,9 +118,9 @@ def write_csv(formatted_json):
 
     for person_entry in formatted_json:
         person_details = ""
-        person_details += person_entry['profile']['name'] + csv_delimitter
-        person_details += person_entry['profile']['orcid'] + csv_delimitter
-        person_details += person_entry['profile']['scopus'] + csv_delimitter
+        person_details += str(person_entry['profile']['name']) + csv_delimitter
+        person_details += str(person_entry['profile']['orcid']) + csv_delimitter
+        person_details += str(person_entry['profile']['scopus']) + csv_delimitter
 
 
         formatted_string = ""
