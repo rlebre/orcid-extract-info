@@ -111,7 +111,7 @@ def write_csv(formatted_json):
     #persons = json.loads(formatted_json)
     formatted_csv_strings = []
     csv_delimitter = '\t'
-    headers = ['name', 'orcid', 'scopus', 'title', 'journal', 'year', 'type', 'url', 'doi', 'created', 'contributor', '\n']
+    headers = ['name', 'orcid', 'scopusid', 'source', 'title', 'journal', 'year', 'type', 'url', 'doi', 'created', 'contributor', '\n']
     headers = csv_delimitter.join(headers)
 
     formatted_csv_strings.append(headers)
@@ -127,6 +127,7 @@ def write_csv(formatted_json):
 
         for contribution in person_entry['publications']:
             formatted_string += person_details
+            formatted_string += contribution['source'] + csv_delimitter
             formatted_string += contribution['title'] + csv_delimitter
             formatted_string += contribution['journal'] + csv_delimitter
             formatted_string += contribution['year'] + csv_delimitter
@@ -161,7 +162,7 @@ def get_personal_details(orcid, token_json):
 
     if args.save_requests:
         with open( os.path.join(args.save_requests, "{}.json".format(orcid)), 'w') as outfile:
-            json.dump(response, outfile)
+            json.dump(response, outfile, sort_keys=True, indent=3)
 
     ret = {}
 
@@ -183,7 +184,7 @@ def get_personal_details(orcid, token_json):
 
         if args.save_requests:
             with open(os.path.join(args.save_requests,"{}-pubs-{}.json".format(orcid, i)), 'w') as outfile:
-                json.dump(tmp_pub_list, outfile)
+                json.dump(tmp_pub_list, outfile, sort_keys=True, indent=3)
 
         ret["publications"] += orcid_parser.parse_works_bulkdata(tmp_pub_list)
 

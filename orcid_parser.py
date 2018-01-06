@@ -12,6 +12,7 @@ jsonpath_expr["doi"] = parse('external-ids.external-id[?(external-id-type = "doi
 jsonpath_expr["url"] = parse('url.value')
 jsonpath_expr["created"] = parse('created-date.value')
 jsonpath_expr["contrib"] = parse('contributors.contributor[*].credit-name.value')
+jsonpath_expr["source"] = parse('source.source-name.value')
 
 
 # PERSON
@@ -19,6 +20,8 @@ jsonpath_expr["orcid"] = parse('person.name.path')
 jsonpath_expr["name"] = parse('person.name.credit-name.value')
 jsonpath_expr["scopus"] = parse('person.external-identifiers.external-identifier[?(external-id-type = "Scopus Author ID")].external-id-value')
 
+jsonpath_expr["given-names"] = parse('person.name.given-names.value')
+jsonpath_expr["family-name"] = parse('person.name.family-name.value')
 
 #TODO: will PR to JSONPATH-nG
 def find_first(jsonpath_expr, datum):
@@ -66,6 +69,14 @@ def parse_work_entry(work_entry):
         return_dict['type'] = ""
 
     try:
+        return_dict['source'] = find_first(jsonpath_expr["source"], work_entry)
+
+        if "Scopus" in return_dict['source']:
+            return_dict['source'] = "Scopus"
+    except:
+        return_dict['source'] = ""
+        
+    try:
         return_dict['doi'] = [ m.value for m in jsonpath_expr["doi"].find(work_entry)]
     except:
         return_dict['doi'] = []
@@ -75,7 +86,6 @@ def parse_work_entry(work_entry):
             return_dict['url'] = ""
         else:
             return_dict['url'] = find_first(jsonpath_expr["url"], work_entry)
-            
     except:
         return_dict['url'] = ""
 
@@ -89,23 +99,28 @@ def parse_work_entry(work_entry):
     except:
         return_dict['contributions'] = []
 
+
+
     return return_dict
 
 
 def parse_personal_details(datum):
+    name = find_first(jsonpath_expr["name"], datum)
+    orcid = find_first(jsonpath_expr["orcid"], datum)
+    scopus = find_first(jsonpath_expr["scopus"], datum)
+    
+    if not name:
+        name = str(find_first(jsonpath_expr["given-names"], datum)) + " " + str(find_first(jsonpath_expr["family-name"], datum))
+
+    if not scopus:
+        scopus = "ID not defined"
+
     return {
-        "name": find_first(jsonpath_expr["name"], datum),
-        "orcid": find_first(jsonpath_expr["orcid"], datum),
-        "scopus": find_first(jsonpath_expr["scopus"], datum),
+        "name": name,
+        "orcid": orcid,
+        "scopus": scopus,
 
     }
-
-    # }
-    #             eid: "",-
-    #             url: "",
-    #             created: "",
-    #             contributors: ["name1", "name2", "nameN"]
-    #         }
 
 def parse_works_bulkdata(bulk_data):
     l = []
