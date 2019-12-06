@@ -9,7 +9,7 @@ Jinja2==2.10
 jsonpath-ng==1.4.3
 MarkupSafe==1.0
 ply==3.10
-requests==2.18.4
+requests==2.20.0
 six==1.11.0
 urllib3==1.22
 Werkzeug==0.15.3
